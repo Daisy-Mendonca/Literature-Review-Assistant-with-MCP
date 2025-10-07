@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+requests
+jinja2
+transformers
+torch
+beautifulsoup4
+python-dotenv
+pydantic
+markdown2
