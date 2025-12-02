@@ -1,0 +1,1 @@
+Run it as poetry run python -m main
