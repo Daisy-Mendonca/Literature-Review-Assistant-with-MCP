@@ -4,28 +4,26 @@ import json
 import re
 from flask import Flask, request, jsonify, send_from_directory
 from transformers import pipeline, AutoTokenizer, AutoModelForSeq2SeqLM
-from fastmcp.client import Client   
-from fastmcp.client.transports import SSETransport
+from fastmcp.client import Client
 
 app = Flask(__name__, static_folder="../frontend", static_url_path="")
 
 # --------------------
 # LLM setup
 # --------------------
-MODEL = "google/flan-t5-small"
+MODEL = "meta-llama/Meta-Llama-3-8B"
 tokenizer = AutoTokenizer.from_pretrained(MODEL)
 model = AutoModelForSeq2SeqLM.from_pretrained(MODEL)
 generator = pipeline("text2text-generation", model=model, tokenizer=tokenizer)
 
 PROMPT = """
 You are a tool selector. Return JSON only.
-
-Tools:
+These are the tools that you can use:
 - search_papers
-- get_paper
-- clarify
+- get_paper_details
 
-Respond ONLY in JSON:
+The tool you select should be placed in "action", and the arguments to that tool in "args".
+Your response should be in the following JSON format:
 {{ "action": "...", "args": {{ ... }} }}
 
 User query: "{query}"
@@ -62,14 +60,14 @@ def handle_query():
 
     gen = generator(prompt, max_length=256, do_sample=False)
     model_text = gen[0]["generated_text"]
-
+    print(f"Model output: {model_text}")
     parsed = parse_json_from_model_output(model_text)
     if parsed is None:
         return jsonify({"error": "could not parse model output", "model_output": model_text}), 500
 
     action = parsed.get("action")
     args = parsed.get("args", {})
-
+    print(f"Action: {action}, Args: {args}")
     try:
         # Call MCP tool
         result = asyncio.run(call_mcp_tool(action, args))
